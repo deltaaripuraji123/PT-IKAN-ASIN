@@ -22,7 +22,8 @@ class AdminOrderController extends Controller
     
     public function show(Order $order)
     {
-        $order->load('orderItems.product');
+        // Pastikan relasi yang dimuat sudah benar
+        $order->load('user', 'orderItems.product');
         
         return view('admin.orders.show', compact('order'));
     }
@@ -30,7 +31,8 @@ class AdminOrderController extends Controller
     public function updateStatus(Request $request, Order $order)
     {
         $request->validate([
-            'order_status' => 'required|in:pending,processing,shipped,completed',
+            // TAMBAHKAN 'cancelled' DI SINI
+            'order_status' => 'required|in:pending,processing,shipped,completed,cancelled',
             'payment_status' => 'required|in:pending,paid'
         ]);
         
