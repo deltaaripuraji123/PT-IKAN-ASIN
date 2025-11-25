@@ -53,21 +53,23 @@
                                         </td>
                                         <td class="text-center py-4">Rp. {{ number_format($cart->product->price, 0, ',', '.') }}</td>
                                         <td class="text-center py-4">
-                                            <form action="{{ route('cart.update', $cart->id) }}" method="POST" class="flex items-center justify-center">
-                                                @csrf
-                                                <input type="number" name="quantity" min="1" max="{{ $cart->product->stock }}" value="{{ $cart->quantity }}" class="w-16 border rounded px-2 py-1 text-center">
-                                                <button type="submit" class="ml-2 text-blue-600 hover:text-blue-800">
-                                                    <i class="fas fa-sync-alt"></i>
-                                                </button>
-                                            </form>
+                                        <td class="text-center py-4">
+                                        <form action="{{ route('cart.update', $cart->id) }}" method="POST" class="flex items-center justify-center">
+                                            @csrf
+                                            @method('PUT') <!-- TAMBAHKAN BARIS INI -->
+                                            <input type="number" name="quantity" min="1" max="{{ $cart->product->stock }}" value="{{ $cart->quantity }}" class="w-16 border rounded px-2 py-1 text-center">
+                                            <button type="submit" class="ml-2 text-blue-600 hover:text-blue-800" title="Update Jumlah">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        </form>
+                                        </td>
                                         </td>
                                         <td class="text-center py-4">Rp. {{ number_format($cart->product->price * $cart->quantity, 0, ',', '.') }}</td>
                                         <td class="text-center py-4">
-                                            <form action="{{ route('cart.remove', $cart->id) }}" method="POST">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-800"></button>
-                                                                                            <button type="submit" class="text-red-600 hover:text-red-800">
+                                        <form action="{{ route('cart.remove', $cart->id) }}" method="POST">
+                                            @csrf
+                                            @method('DELETE') <!-- PASTIKAN BARIS INI ADA -->
+                                            <button type="submit" class="text-red-600 hover:text-red-800">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>

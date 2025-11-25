@@ -52,21 +52,26 @@ class CartController extends Controller
     }
     
     public function update(Request $request, Cart $cart)
-    {
-        $request->validate([
-            'quantity' => 'required|integer|min:1'
-        ]);
-        
-        // Pastikan user hanya bisa mengupdate cart miliknya sendiri
-        if ($cart->user_id != Auth::id()) {
-            return redirect()->route('cart.index')->with('error', 'Anda tidak memiliki izin untuk melakukan aksi ini.');
-        }
-        
-        $cart->quantity = $request->quantity;
-        $cart->save();
-        
-        return redirect()->route('cart.index')->with('success', 'Keranjang berhasil diperbarui.');
+{
+    $request->validate([
+        'quantity' => 'required|integer|min:1'
+    ]);
+    
+    // Pastikan user hanya bisa mengupdate cart miliknya sendiri
+    if ($cart->user_id != Auth::id()) {
+        return redirect()->route('cart.index')->with('error', 'Anda tidak memiliki izin untuk melakukan aksi ini.');
     }
+    
+    // Validasi tambahan: pastikan quantity tidak melebihi stok
+    if ($request->quantity > $cart->product->stock) {
+        return redirect()->route('cart.index')->with('error', "Stok untuk {$cart->product->name} tidak mencukupi. Stok tersisa: {$cart->product->stock}");
+    }
+    
+    $cart->quantity = $request->quantity;
+    $cart->save();
+    
+    return redirect()->route('cart.index')->with('success', 'Keranjang berhasil diperbarui.');
+}
     
     public function remove(Cart $cart)
     {
