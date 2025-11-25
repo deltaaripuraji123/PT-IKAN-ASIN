@@ -1,7 +1,7 @@
 <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 lg:pl-0">
     <div class="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
         <!-- Left side: Hamburger menu -->
-        <button @click="$dispatch('toggle-sidebar')" class="text-gray-500 hover:text-gray-700 focus:outline-none lg:hidden">
+        <button @click="$dispatch('toggle-sidebar')" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 focus:outline-none lg:hidden">
             <span class="material-symbols-outlined text-2xl">menu</span>
         </button>
 
@@ -16,14 +16,31 @@
             <div x-data="{ open: false }" class="relative">
                 <button @click="open = !open" class="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white focus:outline-none">
                     <span class="material-symbols-outlined">account_circle</span>
-                    <span class="hidden md:block text-sm font-medium">Admin User</span>
+                    <span class="hidden md:block text-sm font-medium">{{ Auth::user()->name }}</span>
                     <span class="material-symbols-outlined text-sm">expand_more</span>
                 </button>
 
                 <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50">
-                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Profile</a>
+                    <!-- Link ke Halaman Beranda (Toko) -->
+                    <a href="{{ route('home') }}" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <span class="material-symbols-outlined text-lg">store</span>
+                        Kunjungi Toko
+                    </a>
+                    
+                    <a href="#" class="flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <span class="material-symbols-outlined text-lg">person</span>
+                        Profile
+                    </a>
+                    
                     <hr class="my-1 border-gray-200 dark:border-gray-700">
-                    <a href="{{ route('logout') }}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">Logout</a>
+                    
+                    <form action="{{ route('logout') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="flex items-center gap-3 w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <span class="material-symbols-outlined text-lg">logout</span>
+                            Logout
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
