@@ -30,11 +30,15 @@
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Status Pembayaran:</span>
-                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">{{ $order->payment_status }}</span>
+                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+                            {{ $order->payment_status === 'paid' ? 'Dibayar' : 'Menunggu Pembayaran' }}
+                        </span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Status Pesanan:</span>
-                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">{{ $order->order_status }}</span>
+                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+                            {{ $order->order_status === 'pending' ? 'Menunggu' : ($order->order_status === 'processing' ? 'Diproses' : ($order->order_status === 'shipped' ? 'Dikirim' : 'Selesai')) }}
+                        </span>
                     </div>
                 </div>
             </div>
