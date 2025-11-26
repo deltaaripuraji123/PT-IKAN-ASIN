@@ -13,9 +13,22 @@
                 
                 <form action="{{ route('order.store') }}" method="POST">
                     @csrf
+                    
+                    <!-- BLOK UNTUK MENAMPILKAN PESAN ERROR VALIDASI -->
+                    @if ($errors->any())
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                            <strong class="font-bold">Oops! Ada yang salah:</strong>
+                            <ul class="mt-2 list-disc list-inside">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <div class="mb-4">
                         <label for="address" class="block text-gray-700 font-medium mb-2">Alamat Lengkap</label>
-                        <textarea id="address" name="address" rows="4" class="w-full border rounded-lg px-3 py-2" required>{{ auth()->user()->address ?? '' }}</textarea>
+                        <textarea id="address" name="address" rows="4" class="w-full border rounded-lg px-3 py-2" required>{{ old('address', auth()->user()->address ?? '') }}</textarea>
                     </div>
                     
                     <button type="submit" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
