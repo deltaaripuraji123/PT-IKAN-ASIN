@@ -9,9 +9,14 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminCategoryController;
+use App\Http\Controllers\PageController;
 
 // Route untuk halaman utama
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// Route untuk halaman statis
+Route::get('/about', [PageController::class, 'about'])->name('about');
+Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 
 // Route untuk produk
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
