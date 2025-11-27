@@ -19,7 +19,7 @@
                     <i class="fas fa-map-marker-alt text-blue-600 mt-1 mr-4 w-5"></i>
                     <div>
                         <h3 class="font-semibold">Alamat</h3>
-                        <p class="text-gray-700">Jl. Ikan Asin No. 123, Jakarta Utara, DKI Jakarta 14450</p>
+                        <p class="text-gray-700">Pulau Pasaran, Bandar Lampung</p>
                     </div>
                 </div>
                 <div class="flex items-start">
@@ -91,11 +91,16 @@
     </div>
     
     <div class="mt-12 bg-white rounded-lg shadow-md overflow-hidden">
-        <div class="h-96 bg-gray-200">
-            <!-- Peta akan ditampilkan di sini -->
-            <div class="h-full w-full flex items-center justify-center">
-                <p class="text-gray-500">Peta akan ditampilkan di sini</p>
-            </div>
+        <div class="h-96">
+            <!-- Embed Google Maps untuk Pulau Pasaran -->
+            <iframe 
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3972.534838423916!2d105.2646643!3d-5.4638889!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e40d99e13088eab%3A0x78d7d27d658f41b7!2sPulau%20Pasaran!5e0!3m2!1sen!2sid!4v1638360000000!5m2!1sen!2sid" 
+                width="100%" 
+                height="100%" 
+                style="border:0;" 
+                allowfullscreen="" 
+                loading="lazy">
+            </iframe>
         </div>
     </div>
 </div>
