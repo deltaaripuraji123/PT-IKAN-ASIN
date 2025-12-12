@@ -30,16 +30,23 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // --- AWAL PERUBAAN: TAMBAHKAN VALIDASI UNTUK FIELD BARU ---
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'address' => ['required', 'string', 'min:10'], // <--- TAMBAHKAN VALIDASI ALAMAT
+            'phone' => ['required', 'string', 'min:10'],   // <--- TAMBAHKAN VALIDASI TELEPON
         ]);
 
+        // --- AWAL PERUBAAN: TAMBAHKAN FIELD BARU SAAT MEMBUAT USER ---
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'address' => $request->address, // <--- TAMBAHKAN INI
+            'phone' => $request->phone,   // <--- TAMBAHKAN INI
+            'role' => 'customer',        // <--- TAMBAHKAN DEFAULT ROLE
         ]);
 
         event(new Registered($user));

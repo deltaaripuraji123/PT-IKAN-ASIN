@@ -6,10 +6,12 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Cart;
 use App\Models\Product;
+use App\Models\TransactionLog; // <--- TAMBAHKAN INI
+use App\Services\ECCService;       // <--- TAMBAHKAN INI
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log; // PASTIKAN INI ADA
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
@@ -38,7 +40,7 @@ class OrderController extends Controller
     /**
      * Store a new order.
      */
-    public function store(Request $request)
+    public function store(Request $request, ECCService $eccService) // <--- UBAHAN INI: INJECT ECC SERVICE
     {
         Log::info('===== PROSES CHECKOUT DIMULAI =====');
         Log::info('User ID: ' . Auth::id());
@@ -79,10 +81,11 @@ class OrderController extends Controller
         try {
             Log::info('Transaksi database dimulai.');
 
+            // Alamat akan dienkripsi otomatis oleh mutator di Model Order
             $order = Order::create([
                 'user_id' => Auth::id(),
                 'total_price' => $total,
-                'address' => $request->address,
+                'address' => $request->address, // Mutator akan mengenkripsi ini
                 'payment_status' => 'pending',
                 'order_status' => 'pending'
             ]);
@@ -114,6 +117,26 @@ class OrderController extends Controller
             
             DB::commit();
             Log::info('Transaksi berhasil di-commit.');
+
+            // --- AWAL TAMBAHAN: PROSES ENKRIPSI PAYLOAD ---
+            Log::info('Memulai proses enkripsi payload transaksi...');
+            $payload = [
+                'order_id' => $order->id,
+                'user_id' => Auth::id(),
+                'total' => $total,
+                'timestamp' => now()->toDateTimeString(),
+            ];
+            Log::info('Payload transaksi dibuat: ' . json_encode($payload));
+
+            $encryptedPayload = $eccService->encrypt(json_encode($payload));
+            Log::info('Payload berhasil dienkripsi.');
+
+            TransactionLog::create([
+                'order_id' => $order->id,
+                'encrypted_payload' => $encryptedPayload,
+            ]);
+            Log::info('Payload terenkripsi berhasil disimpan ke transaction_logs.');
+            // --- AKHIR TAMBAHAN: PROSES ENKRIPSI PAYLOAD ---
             
             return redirect()->route('order.success', $order->id)->with('success', 'Pesanan Anda berhasil dibuat.');
         } catch (\Exception $e) {
