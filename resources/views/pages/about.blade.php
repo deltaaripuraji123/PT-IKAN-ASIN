@@ -49,7 +49,7 @@
                             ikan asin terbaik untuk memastikan produk yang kami jual memiliki kualitas terbaik dan harga yang kompetitif.
                         </p>
                     </div>
-                    <div class="md:w-1/2 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80');">
+                    <div class="md:w-1/2 bg-cover bg-center" style="background-image: url('https://www.itrip.id/wp-content/uploads/2022/03/Aktivitas-Menarik-Pulau-Pasaran.jpg');">
                     </div>
                 </div>
             </div>
