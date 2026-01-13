@@ -30,6 +30,7 @@ Route::delete('/cart/{cart}', [CartController::class, 'remove'])->name('cart.rem
 
 // Route untuk pesanan
 Route::get('/checkout', [OrderController::class, 'checkout'])->name('order.checkout');
+Route::post('/checkout/buynow/{product}', [OrderController::class, 'buyNow'])->name('order.buynow'); // <-- ROUTE BARU UNTUK BELI SEKARANG
 Route::post('/order', [OrderController::class, 'store'])->name('order.store');
 Route::get('/order/success/{order}', [OrderController::class, 'success'])->name('order.success');
 Route::get('/order/history', [OrderController::class, 'history'])->name('order.history');
@@ -59,6 +60,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('admin.orders.index');
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
     Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('admin.orders.updateStatus');
+    
 });
 
 // Route untuk authentication (disediakan oleh Laravel Breeze)

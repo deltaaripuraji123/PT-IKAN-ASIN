@@ -2,108 +2,96 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use App\Services\ECCService; // <--- TAMBAHKAN INI
+use App\Services\ECCService;
 
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
         'role',
-        'address', // <--- TAMBAHKAN INI
-        'phone',   // <--- TAMBAHKAN INI
+        'address',
+        'phone',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
-        'address', // <--- SEMBUNYIKAN VERSI TERENKRIPSI
-        'phone',   // <--- SEMBUNYIKAN VERSI TERENKRIPSI
+        'address',
+        'phone',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
-    
-    /**
-     * Tambahkan atribut yang telah di-dekripsi ke array model.
-     */
+
     protected $appends = [
         'address_decrypted',
         'phone_decrypted',
     ];
-    
-    // --- AWAL LOGIKA ENKRIPSI DEKRIPSI ---
 
-    /**
-     * Interaksi dengan model untuk enkripsi alamat.
-     * Dijalankan saat: $user->address = 'Jl. Sudirman';
-     */
+    // --- ENKRIPSI / DEKRIPSI ---
+
     public function setAddressAttribute($value)
     {
+        if ($value === null || $value === '') {
+            $this->attributes['address'] = null;
+            return;
+        }
         $eccService = app(ECCService::class);
         $this->attributes['address'] = $eccService->encrypt($value);
     }
 
-    /**
-     * Interaksi dengan model untuk dekripsi alamat.
-     * Dijalankan saat: echo $user->address;
-     */
     public function getAddressAttribute($value)
     {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
         $eccService = app(ECCService::class);
-        // Cek apakah value terlihat seperti base64 untuk menghindari dekripsi ganda
-        if (base64_decode($value, true) !== false) {
+        $decoded = base64_decode($value, true);
+
+        if ($decoded !== false && strlen($decoded) >= 16) {
             return $eccService->decrypt($value);
         }
-        return $value; // Kembalikan asli jika tidak terlihat terenkripsi (data lama)
+
+        return $value;
     }
-    
-    /**
-     * Interaksi dengan model untuk enkripsi telepon.
-     */
+
     public function setPhoneAttribute($value)
     {
+        if ($value === null || $value === '') {
+            $this->attributes['phone'] = null;
+            return;
+        }
         $eccService = app(ECCService::class);
         $this->attributes['phone'] = $eccService->encrypt($value);
     }
 
-    /**
-     * Interaksi dengan model untuk dekripsi telepon.
-     */
     public function getPhoneAttribute($value)
     {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
         $eccService = app(ECCService::class);
-        if (base64_decode($value, true) !== false) {
+        $decoded = base64_decode($value, true);
+
+        if ($decoded !== false && strlen($decoded) >= 16) {
             return $eccService->decrypt($value);
         }
+
         return $value;
     }
-    
+
     public function getAddressDecryptedAttribute()
     {
         return $this->address;
@@ -113,19 +101,18 @@ class User extends Authenticatable
     {
         return $this->phone;
     }
-    
-    // --- AKHIR LOGIKA ENKRIPSI DEKRIPSI ---
-    
+
+    // --- RELASI ---
     public function carts()
     {
         return $this->hasMany(Cart::class);
     }
-    
+
     public function orders()
     {
         return $this->hasMany(Order::class);
     }
-    
+
     public function isAdmin()
     {
         return $this->role === 'admin';

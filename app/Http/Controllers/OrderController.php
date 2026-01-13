@@ -6,8 +6,8 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Cart;
 use App\Models\Product;
-use App\Models\TransactionLog; // <--- TAMBAHKAN INI
-use App\Services\ECCService;       // <--- TAMBAHKAN INI
+use App\Models\TransactionLog;
+use App\Services\ECCService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -24,23 +24,69 @@ class OrderController extends Controller
             return redirect()->route('login')->with('message', 'Silakan login terlebih dahulu untuk melakukan checkout.');
         }
         
-        $carts = Cart::where('user_id', Auth::id())->with('product')->get();
-        
-        if ($carts->isEmpty()) {
-            return redirect()->route('cart.index')->with('error', 'Keranjang belanja Anda kosong.');
+        $carts = collect(); // Default kosong
+        $total = 0;
+
+        // CEK: Apakah user sedang melakukan "Beli Sekarang" ?
+        if (session()->has('buy_now_item')) {
+            $buyNowData = session('buy_now_item');
+            $product = Product::find($buyNowData['product_id']);
+
+            if ($product) {
+                // Buat collection palsu agar formatnya sama seperti Cart
+                $carts = collect([
+                    (object)[
+                        'product_id' => $product->id,
+                        'quantity'   => $buyNowData['quantity'],
+                        'product'    => $product
+                    ]
+                ]);
+                $total = $product->price * $buyNowData['quantity'];
+            }
+        } else {
+            // LOGIKA BIASA: Ambil dari Keranjang (Cart)
+            $carts = Cart::where('user_id', Auth::id())->with('product')->get();
+            
+            if ($carts->isEmpty()) {
+                return redirect()->route('cart.index')->with('error', 'Keranjang belanja Anda kosong.');
+            }
+            
+            $total = $carts->sum(function($cart) {
+                return $cart->product->price * $cart->quantity;
+            });
         }
-        
-        $total = $carts->sum(function($cart) {
-            return $cart->product->price * $cart->quantity;
-        });
         
         return view('order.checkout', compact('carts', 'total'));
     }
     
     /**
-     * Store a new order.
+     * Handle "Beli Sekarang" request.
      */
-    public function store(Request $request, ECCService $eccService) // <--- UBAHAN INI: INJECT ECC SERVICE
+    public function buyNow(Request $request, Product $product)
+    {
+        $request->validate([
+            'quantity' => 'required|integer|min:1'
+        ]);
+
+        // Cek Stok
+        if ($product->stock < $request->quantity) {
+            return redirect()->back()->with('error', "Stok untuk {$product->name} tidak mencukupi. Stok tersisa: {$product->stock}");
+        }
+
+        // Simpan data beli langsung ke session
+        session()->put('buy_now_item', [
+            'product_id' => $product->id,
+            'quantity'   => $request->quantity,
+        ]);
+
+        // Redirect ke halaman checkout
+        return redirect()->route('order.checkout');
+    }
+    
+    /**
+     * Store a new order (DIPERBAIKI: Mendukung Cart & BuyNow).
+     */
+    public function store(Request $request, ECCService $eccService)
     {
         Log::info('===== PROSES CHECKOUT DIMULAI =====');
         Log::info('User ID: ' . Auth::id());
@@ -55,26 +101,50 @@ class OrderController extends Controller
         ]);
         Log::info('Validasi alamat berhasil.');
         
-        $carts = Cart::where('user_id', Auth::id())->with('product')->get();
+        // --- PERUBAHAN LOGIC UTAMA DISINI ---
         
-        if ($carts->isEmpty()) {
-            Log::error('Keranjang kosong saat checkout.');
-            return redirect()->route('cart.index')->with('error', 'Keranjang belanja Anda kosong.');
-        }
-        
-        $total = $carts->sum(function($cart) {
-            return $cart->product->price * $cart->quantity;
-        });
-        Log::info('Total harga dihitung: ' . $total);
-        
-        // Cek stok produk
-        foreach ($carts as $cart) {
-            if ($cart->product->stock < $cart->quantity) {
-                Log::error('Stok tidak mencukupi untuk produk: ' . $cart->product->name);
-                return redirect()->route('cart.index')->with('error', "Stok untuk {$cart->product->name} tidak mencukupi. Stok tersisa: {$cart->product->stock}");
+        // Tentukan sumber data: Apakah dari Session (Beli Sekarang) atau dari Tabel Cart?
+        $items = collect();
+        $isBuyNow = false;
+
+        if (session()->has('buy_now_item')) {
+            // MODE 1: BELI SEKARANG (Tanpa Keranjang)
+            $isBuyNow = true;
+            $buyNowData = session('buy_now_item');
+            $product = Product::find($buyNowData['product_id']);
+            
+            if ($product) {
+                // Buat object standar agar bisa diproses loop dengan cara yang sama seperti Cart
+                $items->push((object)[
+                    'product_id' => $product->id,
+                    'quantity'   => $buyNowData['quantity'],
+                    'product'    => $product
+                ]);
+            }
+        } else {
+            // MODE 2: CHECKOUT KERANJANG BIASA
+            $items = Cart::where('user_id', Auth::id())->with('product')->get();
+            
+            if ($items->isEmpty()) {
+                Log::error('Keranjang kosong saat checkout.');
+                return redirect()->route('cart.index')->with('error', 'Keranjang belanja Anda kosong.');
             }
         }
-        Log::info('Pengecekan stok berhasil.');
+        // -------------------------------------
+
+        // Hitung Total & Cek Stok (Universal untuk kedua mode)
+        $total = 0;
+        foreach ($items as $item) {
+            $total += $item->product->price * $item->quantity;
+            
+            // Cek stok produk
+            if ($item->product->stock < $item->quantity) {
+                $redirectTarget = $isBuyNow ? route('home') : route('cart.index');
+                Log::error('Stok tidak mencukupi untuk produk: ' . $item->product->name);
+                return redirect($redirectTarget)->with('error', "Stok untuk {$item->product->name} tidak mencukupi. Stok tersisa: {$item->product->stock}");
+            }
+        }
+        Log::info('Total harga dihitung: ' . $total);
         
         // Buat order dengan transaksi database
         DB::beginTransaction();
@@ -93,32 +163,40 @@ class OrderController extends Controller
             Log::info('Order berhasil dibuat dengan ID: ' . $order->id);
             
             // Buat order items dan kurangi stok
-            foreach ($carts as $cart) {
-                Log::info('Membuat order item untuk produk ID: ' . $cart->product_id);
+            foreach ($items as $item) {
+                Log::info('Membuat order item untuk produk ID: ' . $item->product_id);
                 OrderItem::create([
                     'order_id' => $order->id,
-                    'product_id' => $cart->product_id,
-                    'quantity' => $cart->quantity,
-                    'subtotal_price' => $cart->product->price * $cart->quantity
+                    'product_id' => $item->product_id,
+                    'quantity' => $item->quantity,
+                    'subtotal_price' => $item->product->price * $item->quantity
                 ]);
                 
                 // Kurangi stok produk
-                $product = Product::find($cart->product_id);
-                $product->stock -= $cart->quantity;
+                $product = Product::find($item->product_id);
+                $product->stock -= $item->quantity;
                 $product->save();
                 Log::info('Stok produk ID ' . $product->id . ' berhasil dikurangi. Stok baru: ' . $product->stock);
             }
             
             Log::info('Semua order item dan stok berhasil diperbarui.');
             
-            // Hapus cart setelah checkout
-            Cart::where('user_id', Auth::id())->delete();
-            Log::info('Keranjang berhasil dihapus.');
+            // --- CLEANUP: Hapus data sementara ---
+            if ($isBuyNow) {
+                // Hapus session jika mode Beli Sekarang
+                session()->forget('buy_now_item');
+                Log::info('Session buy_now_item berhasil dihapus.');
+            } else {
+                // Hapus cart jika mode Keranjang Biasa
+                Cart::where('user_id', Auth::id())->delete();
+                Log::info('Keranjang berhasil dihapus.');
+            }
+            // ------------------------------------
             
             DB::commit();
             Log::info('Transaksi berhasil di-commit.');
 
-            // --- AWAL TAMBAHAN: PROSES ENKRIPSI PAYLOAD ---
+            // --- PROSES ENKRIPSI PAYLOAD ---
             Log::info('Memulai proses enkripsi payload transaksi...');
             $payload = [
                 'order_id' => $order->id,
@@ -136,14 +214,16 @@ class OrderController extends Controller
                 'encrypted_payload' => $encryptedPayload,
             ]);
             Log::info('Payload terenkripsi berhasil disimpan ke transaction_logs.');
-            // --- AKHIR TAMBAHAN: PROSES ENKRIPSI PAYLOAD ---
+            // -----------------------------------
             
             return redirect()->route('order.success', $order->id)->with('success', 'Pesanan Anda berhasil dibuat.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Transaksi gagal. Error: ' . $e->getMessage());
             
-            return redirect()->route('cart.index')->with('error', 'Terjadi kesalahan saat memproses pesanan: ' . $e->getMessage());
+            // Jika error saat buy now, redirect ke home. Jika cart, redirect ke cart.
+            $redirectError = $isBuyNow ? route('home') : route('cart.index');
+            return redirect($redirectError)->with('error', 'Terjadi kesalahan saat memproses pesanan: ' . $e->getMessage());
         }
     }
     
