@@ -62,6 +62,7 @@ class OrderController extends Controller
     /**
      * Handle "Beli Sekarang" request.
      */
+<<<<<<< HEAD
     public function buyNow(Request $request, Product $product)
     {
         $request->validate([
@@ -86,6 +87,8 @@ class OrderController extends Controller
     /**
      * Store a new order (DIPERBAIKI: Mendukung Cart & BuyNow).
      */
+=======
+>>>>>>> 5483df7122c92ad80bf6d823bab8bf49bcfd3b68
     public function store(Request $request, ECCService $eccService)
     {
         Log::info('===== PROSES CHECKOUT DIMULAI =====');
@@ -151,13 +154,23 @@ class OrderController extends Controller
         try {
             Log::info('Transaksi database dimulai.');
 
+            // --- AWAL TAMBAHAN: AMBIL DATA USER YANG SEDANG LOGIN ---
+            $loggedInUser = Auth::user();
+            Log::info('Data pemesan diambil untuk User ID: ' . $loggedInUser->id);
+            // --- AKHIR TAMBAHAN ---
+
             // Alamat akan dienkripsi otomatis oleh mutator di Model Order
             $order = Order::create([
                 'user_id' => Auth::id(),
                 'total_price' => $total,
                 'address' => $request->address, // Mutator akan mengenkripsi ini
                 'payment_status' => 'pending',
-                'order_status' => 'pending'
+                'order_status' => 'pending',
+                // --- AWAL TAMBAHAN: SIMPAN DATA PESANAN ---
+                'customer_name' => $loggedInUser->name,
+                'customer_phone' => $loggedInUser->phone,
+                'customer_email' => $loggedInUser->email,
+                // --- AKHIR TAMBAHAN ---
             ]);
 
             Log::info('Order berhasil dibuat dengan ID: ' . $order->id);
@@ -264,7 +277,9 @@ class OrderController extends Controller
             return redirect()->route('order.history')->with('error', 'Anda tidak memiliki izin untuk melihat pesanan ini.');
         }
         
-        $order->load('orderItems.product');
+        // --- AWAL TAMBAHAN: LOAD RELASI UNTUK ADMIN ---
+        $order->load('orderItems.product', 'user', 'transactionLog');
+        // --- AKHIR TAMBAHAN ---
         
         return view('order.detail', compact('order'));
     }
