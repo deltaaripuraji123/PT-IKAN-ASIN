@@ -10,6 +10,7 @@ use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\PaymentController;
 
 // Route untuk halaman utama
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -60,6 +61,10 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('admin.orders.index');
     Route::get('/orders/{order}', [AdminOrderController::class, 'show'])->name('admin.orders.show');
     Route::put('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('admin.orders.updateStatus');
+
+    // TAMBAHKAN ROUTE PEMBAYARAN
+    Route::get('/payment/{order}', [App\Http\Controllers\PaymentController::class, 'show'])->name('payment.show');
+
     
 });
 
