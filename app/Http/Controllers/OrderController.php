@@ -62,7 +62,6 @@ class OrderController extends Controller
     /**
      * Handle "Beli Sekarang" request.
      */
-<<<<<<< HEAD
     public function buyNow(Request $request, Product $product)
     {
         $request->validate([
@@ -87,8 +86,6 @@ class OrderController extends Controller
     /**
      * Store a new order (DIPERBAIKI: Mendukung Cart & BuyNow).
      */
-=======
->>>>>>> 5483df7122c92ad80bf6d823bab8bf49bcfd3b68
     public function store(Request $request, ECCService $eccService)
     {
         Log::info('===== PROSES CHECKOUT DIMULAI =====');
