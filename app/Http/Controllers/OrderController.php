@@ -274,10 +274,14 @@ class OrderController extends Controller
             return redirect()->route('order.history')->with('error', 'Anda tidak memiliki izin untuk melihat pesanan ini.');
         }
         
-        // --- AWAL TAMBAHAN: LOAD RELASI UNTUK ADMIN ---
-        $order->load('orderItems.product', 'user', 'transactionLog');
-        // --- AKHIR TAMBAHAN ---
+        // Load relasi dengan pengecekan untuk mencegah error
+        $order->load('orderItems.product', 'user');
         
+        // Cek apakah relasi transactionLog ada sebelum memuatnya
+        if (method_exists($order, 'transactionLog')) {
+            $order->load('transactionLog');
+        }
+
         return view('order.detail', compact('order'));
     }
 }

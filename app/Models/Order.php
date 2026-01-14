@@ -163,4 +163,11 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+    
+    // --- TAMBAHKAN RELASI INI ---
+    public function transactionLog()
+    {
+        return $this->hasOne(TransactionLog::class);
+    }
+    // --- SELESAI TAMBAHKAN RELASI ---
 }
